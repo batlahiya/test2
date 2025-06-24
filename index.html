@@ -2,15 +2,10 @@
 <html>
   <head>
     <meta charset="utf-8" />
-    <title>Interactive AR BoomBox</title>
+    <title>Interactive BoomBox AR</title>
     <script src="https://aframe.io/releases/1.2.0/aframe.min.js"></script>
     <script src="https://cdn.jsdelivr.net/gh/AR-js-org/AR.js@3.4.2/aframe/build/aframe-ar.min.js"></script>
-
-    <!-- Add interactivity libraries -->
-    <script src="https://cdn.jsdelivr.net/npm/aframe-physics-system@4.0.1/dist/aframe-physics-system.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/super-hands@4.0.5/dist/super-hands.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/aframe-extras@6.1.1/dist/aframe-extras.min.js"></script>
-
     <style>
       body {
         margin: 0;
@@ -20,12 +15,7 @@
   </head>
 
   <body>
-    <a-scene
-      embedded
-      arjs="sourceType: webcam;"
-      physics="gravity: 0"
-      cursor="rayOrigin: mouse"
-    >
+    <a-scene embedded arjs="sourceType: webcam;">
       <a-assets>
         <a-asset-item
           id="boombox"
@@ -35,21 +25,20 @@
 
       <!-- Marker -->
       <a-marker preset="hiro">
-        <!-- BoomBox with interaction + spin on load -->
-        <a-entity
-          id="boomboxEntity"
+        <!-- Spin-once + interactive Boombox -->
+        <a-entity id="boomboxEntity"
           gltf-model="#boombox"
-          position="0 0 0"
           scale="80 80 80"
-          animation="property: rotation; to: 0 360 0; dur: 2000; easing: linear"
-          dynamic-body
+          position="0 0 0"
+          rotation="0 0 0"
+          animation__spin="property: rotation; to: 0 360 0; dur: 2000; easing: easeInOutCubic"
           grabbable
           stretchable
           draggable
         ></a-entity>
       </a-marker>
 
-      <!-- Camera & interaction -->
+      <!-- Camera & mouse raycaster -->
       <a-entity camera look-controls>
         <a-entity
           laser-controls="hand: right"
