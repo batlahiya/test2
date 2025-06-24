@@ -13,7 +13,7 @@
     </style>
   </head>
   <body>
-    <a-scene embedded arjs="sourceType: webcam;">
+    <a-scene embedded arjs="sourceType: webcam;" cursor="rayOrigin: mouse">
       <a-assets>
         <a-asset-item 
           id="boombox" 
@@ -23,14 +23,27 @@
 
       <a-marker preset="hiro">
         <a-entity 
+          id="boomboxEntity"
           gltf-model="#boombox" 
-          scale="60 60 60" 
+          scale="100 100 100" 
           position="0 0 0"
-          rotation="0 0 0">
+          rotation="0 180 0"
+          class="clickable"
+          animation__spin="property: rotation; to: 0 540 0; dur: 3000; loop: false; startEvents: click">
         </a-entity>
       </a-marker>
 
       <a-entity camera></a-entity>
     </a-scene>
+
+    <script>
+      // Optional: Log click interaction
+      document.addEventListener('DOMContentLoaded', () => {
+        const entity = document.querySelector('#boomboxEntity');
+        entity.addEventListener('click', () => {
+          console.log('BoomBox clicked!');
+        });
+      });
+    </script>
   </body>
 </html>
