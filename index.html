@@ -1,36 +1,80 @@
 <!DOCTYPE html>
-<html>
-  <head>
-    <meta charset="utf-8" />
-    <title>AR.js BoomBox Full Marker</title>
-    <script src="https://aframe.io/releases/1.2.0/aframe.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/gh/AR-js-org/AR.js@3.4.2/aframe/build/aframe-ar.min.js"></script>
-    <style>
-      body {
-        margin: 0;
-        overflow: hidden;
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>AR.js + A-Frame Touch Controls Example</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  
+  <script src="https://aframe.io/releases/1.2.0/aframe.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/gh/AR-js-org/AR.js@3.4.2/aframe/build/aframe-ar.min.js"></script>
+  <script src="https://hammerjs.github.io/dist/hammer.min.js"></script>
+
+  <style>
+    body { margin: 0; overflow: hidden; }
+  </style>
+</head>
+<body>
+  <a-scene embedded arjs="sourceType: webcam;">
+    <a-assets>
+      <a-asset-item id="boombox" src="https://cdn.jsdelivr.net/gh/KhronosGroup/glTF-Sample-Models@master/2.0/BoomBox/glTF-Binary/BoomBox.glb"></a-asset-item>
+    </a-assets>
+
+    <a-marker preset="hiro">
+      <a-entity id="model"
+                gltf-model="#boombox"
+                scale="50 50 50"
+                position="0 0 0"
+                rotation="0 0 0"
+                touch-gesture-rotation-scale>
+      </a-entity>
+    </a-marker>
+
+    <a-entity camera></a-entity>
+  </a-scene>
+
+  <script>
+    AFRAME.registerComponent('touch-gesture-rotation-scale', {
+      init: function () {
+        const el = this.el;
+        const sceneEl = el.sceneEl;
+        const hammer = new Hammer(sceneEl.canvas);
+
+        this.currentRotation = el.getAttribute('rotation');
+        this.currentScale = el.getAttribute('scale');
+
+        // Enable pinch and pan gestures
+        hammer.get('pinch').set({ enable: true });
+        hammer.get('pan').set({ direction: Hammer.DIRECTION_ALL });
+
+        // Handle pan to rotate the model
+        hammer.on('pan', ev => {
+          let rotation = el.getAttribute('rotation');
+          // Update rotation.y based on horizontal pan delta
+          rotation.y += ev.deltaX * 0.5;  // Adjust sensitivity here
+          // Optional: also rotate x with vertical pan
+          rotation.x += ev.deltaY * 0.3;
+          el.setAttribute('rotation', rotation);
+        });
+
+        // Handle pinch to scale the model
+        hammer.on('pinch', ev => {
+          let scale = this.currentScale;
+          let newScale = ev.scale * 50; // base scale 50 * pinch scale
+          newScale = Math.min(Math.max(newScale, 10), 150); // clamp scale between 10 and 150
+          el.setAttribute('scale', { x: newScale, y: newScale, z: newScale });
+        });
+
+        // On pinch end, save the scale so next pinch is relative
+        hammer.on('pinchend', ev => {
+          this.currentScale = el.getAttribute('scale');
+        });
+
+        // On pan end, save rotation so next pan is relative
+        hammer.on('panend', ev => {
+          this.currentRotation = el.getAttribute('rotation');
+        });
       }
-    </style>
-  </head>
-  <body>
-    <a-scene embedded arjs="sourceType: webcam;">
-      <a-assets>
-        <a-asset-item 
-          id="boombox" 
-          src="https://cdn.jsdelivr.net/gh/KhronosGroup/glTF-Sample-Models@master/2.0/BoomBox/glTF-Binary/BoomBox.glb">
-        </a-asset-item>
-      </a-assets>
-
-      <a-marker preset="hiro">
-        <a-entity 
-          gltf-model="#boombox" 
-          scale="60 60 60" 
-          position="0 0 0"
-          rotation="0 0 0">
-        </a-entity>
-      </a-marker>
-
-      <a-entity camera></a-entity>
-    </a-scene>
-  </body>
+    });
+  </script>
+</body>
 </html>
