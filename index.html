@@ -1,51 +1,88 @@
 <!DOCTYPE html>
-<html>
-  <head>
-    <meta charset="utf-8" />
-    <title>Interactive BoomBox AR</title>
-    <script src="https://aframe.io/releases/1.2.0/aframe.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/gh/AR-js-org/AR.js@3.4.2/aframe/build/aframe-ar.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/super-hands@4.0.5/dist/super-hands.min.js"></script>
-    <style>
-      body {
-        margin: 0;
-        overflow: hidden;
-      }
-    </style>
-  </head>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>AR.js BoomBox with Spin & Interaction</title>
+  <script src="https://aframe.io/releases/1.2.0/aframe.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/gh/AR-js-org/AR.js@3.4.2/aframe/build/aframe-ar.min.js"></script>
+  <style>
+    body { margin: 0; overflow: hidden; }
+  </style>
+</head>
+<body>
+  <a-scene embedded arjs="sourceType: webcam;">
+    <a-assets>
+      <a-asset-item id="boombox" src="https://cdn.jsdelivr.net/gh/KhronosGroup/glTF-Sample-Models@master/2.0/BoomBox/glTF-Binary/BoomBox.glb"></a-asset-item>
+    </a-assets>
 
-  <body>
-    <a-scene embedded arjs="sourceType: webcam;">
-      <a-assets>
-        <a-asset-item
-          id="boombox"
-          src="https://cdn.jsdelivr.net/gh/KhronosGroup/glTF-Sample-Models@master/2.0/BoomBox/glTF-Binary/BoomBox.glb"
-        ></a-asset-item>
-      </a-assets>
-
-      <!-- Marker -->
-      <a-marker preset="hiro">
-        <!-- Spin-once + interactive Boombox -->
-        <a-entity id="boomboxEntity"
-          gltf-model="#boombox"
-          scale="80 80 80"
-          position="0 0 0"
-          rotation="0 0 0"
-          animation__spin="property: rotation; to: 0 360 0; dur: 2000; easing: easeInOutCubic"
-          grabbable
-          stretchable
-          draggable
-        ></a-entity>
-      </a-marker>
-
-      <!-- Camera & mouse raycaster -->
-      <a-entity camera look-controls>
-        <a-entity
-          laser-controls="hand: right"
-          raycaster="objects: [grabbable]"
-          super-hands
-        ></a-entity>
+    <a-marker preset="hiro">
+      <a-entity id="model"
+                gltf-model="#boombox"
+                scale="80 80 80"
+                position="0 0 0"
+                rotation="0 0 0"
+                spin-then-interact>
       </a-entity>
-    </a-scene>
-  </body>
+    </a-marker>
+
+    <a-entity camera></a-entity>
+  </a-scene>
+
+  <script>
+    AFRAME.registerComponent('spin-then-interact', {
+      schema: { spinDuration: {type: 'number', default: 5000} }, // spin duration in ms
+
+      init: function () {
+        this.elapsed = 0;
+        this.spinning = true;
+        this.startRotation = this.el.getAttribute('rotation') || {x:0,y:0,z:0};
+        this.handleDrag = this.handleDrag.bind(this);
+        this.handleDragEnd = this.handleDragEnd.bind(this);
+
+        // For interaction
+        this.isDragging = false;
+        this.previousMouseX = null;
+
+        // Setup event listeners for interaction
+        this.el.sceneEl.canvas.addEventListener('mousedown', this.handleDrag);
+        window.addEventListener('mouseup', this.handleDragEnd);
+        window.addEventListener('mousemove', (evt) => {
+          if (this.isDragging) {
+            // Calculate delta x movement and rotate model accordingly
+            const deltaX = evt.movementX || evt.mozMovementX || evt.webkitMovementX || 0;
+            let rot = this.el.getAttribute('rotation');
+            rot.y += deltaX * 0.5; // sensitivity
+            this.el.setAttribute('rotation', rot);
+          }
+        });
+      },
+
+      tick: function (time, timeDelta) {
+        if (this.spinning) {
+          this.elapsed += timeDelta;
+          // Calculate rotation progress [0 to 1]
+          let progress = Math.min(this.elapsed / this.data.spinDuration, 1);
+          // Rotate on Y from 0 to 360 degrees smoothly
+          this.el.object3D.rotation.y = THREE.MathUtils.lerp(0, Math.PI * 2, progress);
+          if (progress === 1) {
+            this.spinning = false;
+          }
+        }
+      },
+
+      handleDrag: function (evt) {
+        this.isDragging = true;
+      },
+
+      handleDragEnd: function (evt) {
+        this.isDragging = false;
+      },
+
+      remove: function () {
+        this.el.sceneEl.canvas.removeEventListener('mousedown', this.handleDrag);
+        window.removeEventListener('mouseup', this.handleDragEnd);
+      }
+    });
+  </script>
+</body>
 </html>
