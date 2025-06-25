@@ -2,46 +2,18 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>AR.js + A-Frame with Fixed Touch & Buttons</title>
+  <title>AR.js + A-Frame Smooth Touch Gestures</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-
+  
   <script src="https://aframe.io/releases/1.2.0/aframe.min.js"></script>
   <script src="https://cdn.jsdelivr.net/gh/AR-js-org/AR.js@3.4.2/aframe/build/aframe-ar.min.js"></script>
   <script src="https://hammerjs.github.io/dist/hammer.min.js"></script>
 
   <style>
     body { margin: 0; overflow: hidden; }
-    .ui-controls {
-      position: fixed;
-      bottom: 20px;
-      left: 50%;
-      transform: translateX(-50%);
-      display: flex;
-      gap: 10px;
-      z-index: 999;
-    }
-    .ui-controls button {
-      padding: 10px 15px;
-      font-size: 16px;
-      border: none;
-      border-radius: 6px;
-      background-color: rgba(0,0,0,0.6);
-      color: white;
-      cursor: pointer;
-    }
-    .ui-controls button:hover {
-      background-color: rgba(0,0,0,0.8);
-    }
   </style>
 </head>
 <body>
-  <div class="ui-controls">
-    <button onclick="rotateModel(-10)">⟲ Left</button>
-    <button onclick="rotateModel(10)">⟳ Right</button>
-    <button onclick="scaleModel(-2)">➖ Zoom Out</button>
-    <button onclick="scaleModel(2)">➕ Zoom In</button>
-  </div>
-
   <a-scene embedded arjs="sourceType: webcam;">
     <a-assets>
       <a-asset-item id="boombox" src="https://cdn.jsdelivr.net/gh/KhronosGroup/glTF-Sample-Models@master/2.0/BoomBox/glTF-Binary/BoomBox.glb"></a-asset-item>
@@ -61,20 +33,6 @@
   </a-scene>
 
   <script>
-    function rotateModel(deltaY) {
-      const model = document.getElementById('model');
-      const rotation = model.getAttribute('rotation');
-      rotation.y += deltaY;
-      model.setAttribute('rotation', rotation);
-    }
-
-    function scaleModel(delta) {
-      const model = document.getElementById('model');
-      let scale = model.getAttribute('scale');
-      let newScaleVal = Math.min(Math.max(scale.x + delta, 10), 150);
-      model.setAttribute('scale', { x: newScaleVal, y: newScaleVal, z: newScaleVal });
-    }
-
     AFRAME.registerComponent('touch-gesture-rotation-scale', {
       init: function () {
         const el = this.el;
@@ -83,14 +41,14 @@
 
         if (!canvas) {
           sceneEl.addEventListener('render-target-loaded', () => {
-            this.setupGestures(sceneEl.canvas, el);
+            this.initHammer(sceneEl.canvas, el);
           });
         } else {
-          this.setupGestures(canvas, el);
+          this.initHammer(canvas, el);
         }
       },
 
-      setupGestures: function (canvas, el) {
+      initHammer: function (canvas, el) {
         const hammer = new Hammer.Manager(canvas);
         const pan = new Hammer.Pan({ direction: Hammer.DIRECTION_ALL, threshold: 0 });
         const pinch = new Hammer.Pinch({ threshold: 0 });
@@ -111,8 +69,8 @@
           const deltaY = ev.deltaY - lastDelta.y;
 
           const newRot = {
-            x: startRotation.x + deltaY * 0.1,  // UP = tilt UP
-            y: startRotation.y - deltaX * 0.1,  // LEFT = rotate LEFT
+            x: startRotation.x + deltaY * 0.1,  // inverted
+            y: startRotation.y - deltaX * 0.1,  // inverted
             z: 0
           };
 
@@ -126,10 +84,15 @@
         });
 
         hammer.on('pinchmove', (ev) => {
+          const scaleFactor = ev.scale / initialPinchScale;
           const baseScale = startScale.x;
-          const scaleChange = (ev.scale - 1) * 20;  // dampened
-          const newScaleVal = Math.min(Math.max(baseScale + scaleChange, 10), 150);
-          el.setAttribute('scale', { x: newScaleVal, y: newScaleVal, z: newScaleVal });
+          let newScale = baseScale * scaleFactor;
+
+          // Smooth scaling: reduce sensitivity
+          newScale = baseScale + (newScale - baseScale) * 0.2;
+
+          newScale = Math.min(Math.max(newScale, 10), 150);
+          el.setAttribute('scale', { x: newScale, y: newScale, z: newScale });
         });
       }
     });
