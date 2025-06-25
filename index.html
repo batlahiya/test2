@@ -22,12 +22,10 @@
     <a-marker preset="hiro">
       <a-entity id="model"
                 gltf-model="#boombox"
-                scale="0 0 0"
+                scale="50 50 50"
                 position="0 0 0"
                 rotation="0 0 0"
-                touch-gesture-rotation-scale
-                animation__scale="property: scale; to: 50 50 50; dur: 1000; easing: easeOutElastic; startEvents: markerFound"
-                animation__spin="property: rotation; to: 0 360 0; dur: 3000; easing: easeInOutSine; startEvents: markerFound">
+                touch-gesture-rotation-scale>
       </a-entity>
     </a-marker>
 
@@ -62,29 +60,33 @@
         let startScale = el.getAttribute('scale');
         let initialPinchScale = 1;
 
+        // Start pan
         hammer.on('panstart', () => {
           startRotation = el.getAttribute('rotation');
         });
 
+        // Rotate model on pan
         hammer.on('panmove', (ev) => {
           const newRot = {
-            x: startRotation.x - ev.deltaY * 0.2,
-            y: startRotation.y + ev.deltaX * 0.2,
+            x: startRotation.x - ev.deltaY * 0.2, // up/down → tilt up/down
+            y: startRotation.y + ev.deltaX * 0.2, // left/right → rotate left/right
             z: 0
           };
           el.setAttribute('rotation', newRot);
           currentRotation = newRot;
         });
 
+        // Start pinch
         hammer.on('pinchstart', () => {
           startScale = el.getAttribute('scale');
           initialPinchScale = 1;
         });
 
+        // Smooth scale on pinch
         hammer.on('pinchmove', (ev) => {
-          const scaleFactor = 1 + (ev.scale - 1) * 0.1;
+          const scaleFactor = 1 + (ev.scale - 1) * 0.1; // Slower/smoother scaling
           const baseScale = startScale.x;
-          let newScale = Math.min(Math.max(baseScale * scaleFactor, 10), 150);
+          let newScale = Math.min(Math.max(baseScale * scaleFactor, 10), 150); // Clamp scale range
           el.setAttribute('scale', { x: newScale, y: newScale, z: newScale });
         });
       }
