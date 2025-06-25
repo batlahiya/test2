@@ -39,7 +39,6 @@
         const sceneEl = el.sceneEl;
         const canvas = sceneEl.canvas;
 
-        // Wait until canvas is loaded
         if (!canvas) {
           sceneEl.addEventListener('render-target-loaded', () => {
             this.initHammer(sceneEl.canvas, el);
@@ -61,34 +60,29 @@
         let startScale = el.getAttribute('scale');
         let initialPinchScale = 1;
 
-        // PAN START
         hammer.on('panstart', () => {
           startRotation = el.getAttribute('rotation');
         });
 
-        // PAN MOVE (invert directions)
         hammer.on('panmove', (ev) => {
           const newRot = {
-            x: startRotation.x + ev.deltaY * 0.2, // Inverted
-            y: startRotation.y - ev.deltaX * 0.2, // Inverted
+            x: startRotation.x + ev.deltaY * 0.2, // Inverted up/down
+            y: startRotation.y - ev.deltaX * 0.2, // Inverted left/right
             z: 0
           };
           el.setAttribute('rotation', newRot);
           currentRotation = newRot;
         });
 
-        // PINCH START
         hammer.on('pinchstart', () => {
           startScale = el.getAttribute('scale');
           initialPinchScale = 1;
         });
 
-        // PINCH MOVE (make smoother by reducing scaling factor)
         hammer.on('pinchmove', (ev) => {
-          const scaleFactor = 1 + (ev.scale - initialPinchScale) * 0.2; // Smoother factor
-          const baseScale = startScale.x; // assume uniform scale
-          let newScale = Math.min(Math.max(baseScale * scaleFactor, 10), 150);
-
+          const scaleFactor = ev.scale / initialPinchScale;
+          const baseScale = startScale.x;
+          let newScale = Math.min(Math.max(baseScale * (1 + (scaleFactor - 1) * 0.1), 10), 150); // Much slower
           el.setAttribute('scale', { x: newScale, y: newScale, z: newScale });
         });
       }
