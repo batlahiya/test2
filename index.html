@@ -60,29 +60,33 @@
         let startScale = el.getAttribute('scale');
         let initialPinchScale = 1;
 
+        // Start pan
         hammer.on('panstart', () => {
           startRotation = el.getAttribute('rotation');
         });
 
+        // Rotate model on pan
         hammer.on('panmove', (ev) => {
           const newRot = {
-            x: startRotation.x + ev.deltaY * 0.2, // Inverted up/down
-            y: startRotation.y - ev.deltaX * 0.2, // Inverted left/right
+            x: startRotation.x - ev.deltaY * 0.2, // up/down → tilt up/down
+            y: startRotation.y + ev.deltaX * 0.2, // left/right → rotate left/right
             z: 0
           };
           el.setAttribute('rotation', newRot);
           currentRotation = newRot;
         });
 
+        // Start pinch
         hammer.on('pinchstart', () => {
           startScale = el.getAttribute('scale');
           initialPinchScale = 1;
         });
 
+        // Smooth scale on pinch
         hammer.on('pinchmove', (ev) => {
-          const scaleFactor = ev.scale / initialPinchScale;
+          const scaleFactor = 1 + (ev.scale - 1) * 0.1; // Slower/smoother scaling
           const baseScale = startScale.x;
-          let newScale = Math.min(Math.max(baseScale * (1 + (scaleFactor - 1) * 0.1), 10), 150); // Much slower
+          let newScale = Math.min(Math.max(baseScale * scaleFactor, 10), 150); // Clamp scale range
           el.setAttribute('scale', { x: newScale, y: newScale, z: newScale });
         });
       }
