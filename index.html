@@ -11,28 +11,12 @@
 
   <style>
     body { margin: 0; overflow: hidden; }
-    #loadingOverlay {
-      position: fixed;
-      top: 0; left: 0;
-      width: 100vw; height: 100vh;
-      background: #000;
-      color: #fff;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-family: sans-serif;
-      font-size: 1.5em;
-      z-index: 9999;
-    }
   </style>
 </head>
 <body>
-  <div id="loadingOverlay">Loading Model...</div>
-
-  <a-scene embedded arjs="sourceType: webcam;" loading-screen="enabled: false;">
-    <a-assets timeout="10000">
-<!--       <a-asset-item id="boombox" src="cannon.glb"></a-asset-item> -->
-    <a-asset-item id="boombox" src="https://cdn.jsdelivr.net/gh/KhronosGroup/glTF-Sample-Models@master/2.0/BoomBox/glTF-Binary/BoomBox.glb"></a-asset-item> 
+  <a-scene embedded arjs="sourceType: webcam;">
+    <a-assets>
+      <a-asset-item id="boombox" src="https://cdn.jsdelivr.net/gh/KhronosGroup/glTF-Sample-Models@master/2.0/BoomBox/glTF-Binary/BoomBox.glb"></a-asset-item>
     </a-assets>
 
     <a-marker preset="hiro">
@@ -41,7 +25,6 @@
                 scale="50 50 50"
                 position="0 0 0"
                 rotation="0 0 0"
-                visible="false"
                 touch-gesture-rotation-scale>
       </a-entity>
     </a-marker>
@@ -77,38 +60,36 @@
         let startScale = el.getAttribute('scale');
         let initialPinchScale = 1;
 
+        // Start pan
         hammer.on('panstart', () => {
           startRotation = el.getAttribute('rotation');
         });
 
+        // Rotate model on pan
         hammer.on('panmove', (ev) => {
           const newRot = {
-            x: startRotation.x - ev.deltaY * 0.2,
-            y: startRotation.y + ev.deltaX * 0.2,
+            x: startRotation.x - ev.deltaY * 0.2, // up/down → tilt up/down
+            y: startRotation.y + ev.deltaX * 0.2, // left/right → rotate left/right
             z: 0
           };
           el.setAttribute('rotation', newRot);
           currentRotation = newRot;
         });
 
+        // Start pinch
         hammer.on('pinchstart', () => {
           startScale = el.getAttribute('scale');
           initialPinchScale = 1;
         });
 
+        // Smooth scale on pinch
         hammer.on('pinchmove', (ev) => {
-          const scaleFactor = 1 + (ev.scale - 1) * 0.1;
+          const scaleFactor = 1 + (ev.scale - 1) * 0.1; // Slower/smoother scaling
           const baseScale = startScale.x;
-          let newScale = Math.min(Math.max(baseScale * scaleFactor, 10), 150);
+          let newScale = Math.min(Math.max(baseScale * scaleFactor, 10), 150); // Clamp scale range
           el.setAttribute('scale', { x: newScale, y: newScale, z: newScale });
         });
       }
-    });
-
-    // Hide loading overlay and show model when loaded
-    document.querySelector('#boombox').addEventListener('loaded', () => {
-      document.getElementById('loadingOverlay').style.display = 'none';
-      document.getElementById('model').setAttribute('visible', 'true');
     });
   </script>
 </body>
