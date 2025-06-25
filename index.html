@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>AR.js + A-Frame Smooth Touch Controls</title>
+  <title>AR.js + A-Frame with Smooth Touch & UI Buttons</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
   
   <script src="https://aframe.io/releases/1.2.0/aframe.min.js"></script>
@@ -11,9 +11,37 @@
 
   <style>
     body { margin: 0; overflow: hidden; }
+    .ui-controls {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      gap: 10px;
+      z-index: 999;
+    }
+    .ui-controls button {
+      padding: 10px 15px;
+      font-size: 16px;
+      border: none;
+      border-radius: 6px;
+      background-color: rgba(0,0,0,0.6);
+      color: white;
+      cursor: pointer;
+    }
+    .ui-controls button:hover {
+      background-color: rgba(0,0,0,0.8);
+    }
   </style>
 </head>
 <body>
+  <div class="ui-controls">
+    <button onclick="rotateModel(-10)">⟲ Left</button>
+    <button onclick="rotateModel(10)">⟳ Right</button>
+    <button onclick="scaleModel(-5)">➖ Zoom Out</button>
+    <button onclick="scaleModel(5)">➕ Zoom In</button>
+  </div>
+
   <a-scene embedded arjs="sourceType: webcam;">
     <a-assets>
       <a-asset-item id="boombox" src="https://cdn.jsdelivr.net/gh/KhronosGroup/glTF-Sample-Models@master/2.0/BoomBox/glTF-Binary/BoomBox.glb"></a-asset-item>
@@ -33,13 +61,28 @@
   </a-scene>
 
   <script>
+    // UI Button Controls
+    function rotateModel(deltaY) {
+      const model = document.getElementById('model');
+      const rotation = model.getAttribute('rotation');
+      rotation.y += deltaY;
+      model.setAttribute('rotation', rotation);
+    }
+
+    function scaleModel(delta) {
+      const model = document.getElementById('model');
+      let scale = model.getAttribute('scale');
+      let newScaleVal = Math.min(Math.max(scale.x + delta, 10), 150);
+      model.setAttribute('scale', { x: newScaleVal, y: newScaleVal, z: newScaleVal });
+    }
+
+    // Custom Touch Controls
     AFRAME.registerComponent('touch-gesture-rotation-scale', {
       init: function () {
         const el = this.el;
         const sceneEl = el.sceneEl;
         const canvas = sceneEl.canvas;
 
-        // Wait until canvas is loaded
         if (!canvas) {
           sceneEl.addEventListener('render-target-loaded', () => {
             this.initHammer(sceneEl.canvas, el);
@@ -53,42 +96,41 @@
         const hammer = new Hammer.Manager(canvas);
         const pan = new Hammer.Pan({ direction: Hammer.DIRECTION_ALL, threshold: 0 });
         const pinch = new Hammer.Pinch({ threshold: 0 });
-
         hammer.add([pan, pinch]);
 
         let startRotation = el.getAttribute('rotation');
-        let currentRotation = { ...startRotation };
         let startScale = el.getAttribute('scale');
+        let lastDelta = { x: 0, y: 0 };
         let initialPinchScale = 1;
 
-        // PAN START
         hammer.on('panstart', () => {
           startRotation = el.getAttribute('rotation');
+          lastDelta = { x: 0, y: 0 };
         });
 
-        // PAN MOVE
         hammer.on('panmove', (ev) => {
+          const deltaX = ev.deltaX - lastDelta.x;
+          const deltaY = ev.deltaY - lastDelta.y;
+
           const newRot = {
-            x: startRotation.x - ev.deltaY * 0.2,
-            y: startRotation.y + ev.deltaX * 0.2,
+            x: startRotation.x - deltaY * 0.1, // smoother
+            y: startRotation.y + deltaX * 0.1,
             z: 0
           };
+
           el.setAttribute('rotation', newRot);
-          currentRotation = newRot;
+          lastDelta = { x: ev.deltaX, y: ev.deltaY };
         });
 
-        // PINCH START
         hammer.on('pinchstart', () => {
           startScale = el.getAttribute('scale');
           initialPinchScale = 1;
         });
 
-        // PINCH MOVE
         hammer.on('pinchmove', (ev) => {
           const scaleFactor = ev.scale / initialPinchScale;
-          const baseScale = startScale.x; // assume uniform scale
+          const baseScale = startScale.x;
           let newScale = Math.min(Math.max(baseScale * scaleFactor, 10), 150);
-
           el.setAttribute('scale', { x: newScale, y: newScale, z: newScale });
         });
       }
